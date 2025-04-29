@@ -13,207 +13,385 @@
 
 - Vous trouverez ci-dessous un guide étape par étape expliquant comment installer NextCloud sur Ubuntu 24.04 LTS.
 
-#### Étape 1 : Mettre à jour et mettre à niveau le système
+## Partie 1 : Configuration de Cloudflare
 
-- Avant l'installation de nextcloud, nous ferions mieux de mettre à jour tous les packages système et de mettre à niveau le système vers la dernière version. Pour mettre à jour et mettre à niveau en un seul coup, veuillez exécuter la commande suivante.
+- 1 - Assurez-vous que votre domaine utilise Cloudflare DNS
 
-```sh
-sudo -i
-apt update -y && apt upgrade -y
-```
+  ![Nextcloud](/assets/cloudflare.png)
 
-#### Étape 2 : installer Apache et MySQL Server
+- 2 - Accédez à Cloudflare Zero Trust > Réseau > Tunnels
 
-- Nextcloud est une application Web avec un back-end de base de données, nous avons donc besoin d'un serveur Web et d'un serveur de base de données pour l'installation, nous installons Apache comme serveur Web et MariaDB comme serveur de base de données.
+- 3 - Créez un tunnel et sélectionnez l'architecture Debian 64 bits
 
-- Installation du serveur Apache :
+- 4 - Copiez la commande d'installation du connecteur Cloudflared et exécutez-la sur votre serveur
 
-```sh
-apt install apache2 -y
-```
+  ![Nextcloud](/assets/cloudflare-2.png)
 
-- Démarrer et activer le service Apache :
+## Partie 2 : Installation de Nextcloud
 
-```sh
-systemctl start apache2
-systemctl enable apache2
-```
+- **Étape 1** : Configuration initiale
 
-- Consultez l'état actuel du serveur Apache avec la commande ci-dessous, le serveur Apache doit être en cours d'exécution.
+- 1 - Installer les packages nécessaires :
 
 ```sh
-systemctl status apache2
+sudo apt install -y eza redis-server build-essential unzip libmagickwand-dev librsvg2-dev libmagickcore-6.q16-7-extra
 ```
 
-- Installation du serveur MariaDB
+- 2 - Remplacer .bashrc:
 
 ```sh
-apt install mariadb-server
+rm ~/.bashrc
+wget https://raw.githubusercontent.com/drewgrif/jag_dots/main/.bashrc_server
+mv ~/.bashrc_server ~/.bashrc
+bash
 ```
 
-- Démarrer et activer le service MariaDB
+- 3 - Mise à jour et mise à niveau :
 
 ```sh
-systemctl start mariadb
-systemctl enable mariadb
+sudo apt update && sudo apt upgrade -y && sudo apt clean
 ```
 
-- Vérifiez l'état actuel du serveur MariaDB avec la commande ci-dessous, le service MariaDB doit être en cours d'exécution.
+- 4 - Mise à jour du nom d'hôte
 
 ```sh
-systemctl status mariadb
+sudo nano /etc/hostname
 ```
 
-#### Étape 3 : Installer PHP et les modules de support
-
-- Nextcloud est écrit en PHP et JavaScript, nous avons donc dû installer PHP et tous les modules requis pour que ses fonctionnalités fonctionnent correctement.
-
-- Installer PHP et les modules requis :
+- Ajouter le sous-domaine de Cloudflareex: `nextcloud.diarabaka.com`
 
 ```sh
-apt install php php-common libapache2-mod-php php-bz2 php-gd php-mysql \
-php-curl php-mbstring php-imagick php-zip php-common php-curl php-xml \
-php-json php-bcmath php-xml php-intl php-gmp zip unzip wget
+sudo nano /etc/hosts
 ```
 
-- Activer les modules PHP sur Apache.
+- Ajouter une ligne `127.0.1.1 ex: venetian nextcloud.diarabaka.com`
+
+- 5 - Redémarrer le serveur
 
 ```sh
-a2enmod env rewrite dir mime headers setenvif ssl
+sudo reboot
 ```
 
-- Maintenant, redémarrez Apache pour charger tous les modules PHP installés
+- Reconnectez-vous
+
+#### Étape 2 : Téléchargement et installation de Nextcloud
+
+- Installer MariaDB :
 
 ```sh
-systemctl restart apache2
+sudo apt install -y mariadb-server
+sudo mysql_secure_installation
 ```
 
-- Vérifiez que les modules sont chargés sur Apache.
+- 2a. mysql_secure_installation
 
 ```sh
-root@nextcloud:~# apache2ctl -M
-Loaded Modules:
- core_module (static)
- so_module (static)
- watchdog_module (static)
- http_module (static)
- log_config_module (static)
- logio_module (static)
- version_module (static)
-...........
+Enter current password for root (enter for none): Enter
+Switch to unix_socket_authentication [Y/n] n
+Change root password [Y/n] Y
+Set password
+Remove anonymous users? Y
+Disallow root login remotely? Y
+Remove test database and access to it? Y
+Reload privilidge tables now? Y
 ```
 
-#### Étape 4 : Créer la base de données et l’utilisateur Nextcloud
-
-- Dans cette étape, nous allons créer une base de données et un utilisateur de base de données pour Nextcloud.
-
-- Connectez-vous à l'invite MySQL, tapez simplement la commande ci-dessous, elle ouvrira une invite MariaDB interactive pour créer un utilisateur et une base de données.
+- Créer une base de données Nextcloud
 
 ```sh
-mysql
+sudo mariadb
 ```
 
-- Créez maintenant une base de données MySQL et un utilisateur pour Nextcloud, puis accordez-lui les autorisations d'accès à la base de données. Copiez toutes les commandes SQL et exécutez-les une par une à l'invite.
+- À l'intérieur du shell MariaDB :
 
 ```sh
-MariaDB [(none)]> CREATE USER 'nextcloud'@'localhost' IDENTIFIED BY 'nextcloud@123';
-MariaDB [(none)]> CREATE DATABASE IF NOT EXISTS nextcloud CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
-MariaDB [(none)]> GRANT ALL PRIVILEGES ON nextcloud.* TO 'nextcloud'@'localhost';
-MariaDB [(none)]> FLUSH PRIVILEGES;
-MariaDB [(none)]> quit;
+CREATE DATABASE nextcloud;
+CREATE USER 'nextcloud'@'localhost' IDENTIFIED BY 'motdepassesécurisé';
+GRANT ALL PRIVILEGES ON nextcloud.* TO 'nextcloud'@'localhost';
+FLUSH PRIVILEGES;
+EXIT;
 ```
 
-#### Étape 5 : Décompressez l'archive Nextcloud et configurez-la
+#### Étape 3 : Configurer le serveur Web Apache
 
-- Téléchargez maintenant la dernière archive Nextcloud. Accédez à la [page de téléchargement Nextcloud](https://nextcloud.com/install/). . Vous pouvez également la télécharger depuis ce [lien direct .](https://download.nextcloud.com/server/releases/latest.zip)
-
-- Téléchargez et décompressez dans le dossier racine Web `/var/www/html` :
+- 1 - Installer les packages PHP requis :
 
 ```sh
-cd /var/www/html
+sudo apt install php php-apcu php-bcmath php-cli php-common php-curl php-gd php-gmp php-imagick php-intl php-mbstring php-mysql php-zip php-xml php-redis
 ```
 
-- Supprimez le fichier index.html par défaut de la racine Web :
+- 2 - Activer les modules Apache
 
 ```sh
-rm index.html
+sudo a2enmod dir env headers mime rewrite ssl
 ```
 
-- Téléchargez et décompressez l'archive Nextcloud :
+```sh
+sudo phpenmod bcmath gmp imagick intl redis
+```
+
+- 3 - Télécharger Nextcloud :
 
 ```sh
 wget https://download.nextcloud.com/server/releases/latest.zip
+```
+
+- Décompressez Nextcloud :
+
+```sh
 unzip latest.zip
 ```
 
-- Déplacez tout le contenu Nextcloud vers le dossier racine Web (/var/www/html) :
+- 4 - Renommer nextcloud en sous-domaine
 
 ```sh
-cd /var/www/html/nextcloud
-mv * /var/www/html/
+sudo mv nextcloud /var/www/nextcloud.diarabaka.com
 ```
 
-- Supprimer le dossier nextcloud vide
+- 5 - Modifier la propriété de nextcloud
 
 ```sh
-rmdir /var/www/html/nextcloud
+sudo chown -R www-data:www-data /var/www/nextcloud.diarabaka.com
 ```
 
-- Modifiez la propriété du répertoire de contenu Nextcloud à l'utilisateur HTTP.
+- 6 - Déplacer nextcloud vers Apache
 
 ```sh
-chown -R www-data:www-data /var/www/html
+sudo mv nextcloud.diarabaka.com /var/www
 ```
 
-#### Étape 6 : Terminer l’installation de Nextcloud
-
-- Maintenant, allez dans le navigateur et tapez `http:// [ ip ou fqdn ]` du serveur. La page d'installation de Nextcloud ci-dessous s'affichera.
-
-- Sur cette page, nous devons fournir des informations pour
-
-- 1 - Nom d'utilisateur et mot de passe de l'administrateur Nextcloud
-- 2 - Informations d'identification de la base de données (nom de la base de données, utilisateur de la base de données et mot de passe de la base de données)
-- 3 - Après avoir fourni toutes les informations, cliquez sur le bouton `Installer`
-
-![nextcloud](/assets/nextcloud_01.png)
-
-- Une fois l'installation de Nextcloud terminée, la page des applications recommandées s'affichera. Cliquez sur le bouton **Installer les applications recommandées** .
-
-![nextcloud](/assets/nextcloud_02.png)
-
-- il faudra 1/2 minute pour installer toutes les applications recommandées, puis le tableau de bord d'administration s'affichera.
-
-![nextcloud](/assets/nextcloud_03.png)
-
-- avec le tableau de bord d'administration qui s'affiche, notre installation Nextcloud sur Ubuntu 24.04 se termine avec succès 🤗
-
-#### Domaine non approuvé. Nous devons donc effectuer quelques configurations sur le serveur.
+- 7 - Désactiver le site Apache par défaut
 
 ```sh
-nano /var/www/html/config/config.php
+sudo a2dissite 000-default.conf
+```
+
+- 8 - Configurer Apache pour Nextcloud
+
+```sh
+<VirtualHost *:80>
+    ServerName nextcloud.diarabaka.com
+    DocumentRoot /var/www/nextcloud.diarabaka.com
+
+    <Directory /var/www/nextcloud.diarabaka.com/>
+        Require all granted
+        AllowOverride All
+    </Directory>
+
+    TransferLog /var/log/apache2/nextcloud.diarabaka.com_access.log
+    ErrorLog /var/log/apache2/nextcloud.diarabaka.com_error.log
+</VirtualHost>
+```
+
+- 9 - Activer le site Nextcloud et redémarrer Apache
+
+```sh
+sudo a2ensite nextcloud.diarabaka.com.conf
+sudo systemctl restart apache2
+```
+
+- 10 - Installation de SSL
+
+```sh
+sudo snap install core; sudo snap refresh core
+```
+
+- 11 - Installer Certbot
+
+```sh
+sudo snap install --classic certbot
 ```
 
 ```sh
-<?php
-$CONFIG = array (
-  'instanceid' => 'oc3w93pwyw2t',
-  'passwordsalt' => '4DfAo/pgLdmDGCqBnQ1GxB7k3Jq44x',
-  'secret' => 'HeILH3cjb/SnN1wiAapX+PsACaQnu8sZr/tQNIWrXeiyClSS',
-  'trusted_domains' =>
-  array (
-    0 => '192.168.129.20',
-  ),
-  'datadirectory' => '/var/www/html/data',
-  'dbtype' => 'mysql',
-  'version' => '31.0.4.1',
-  'overwrite.cli.url' => 'http://192.168.129.20',
-  'dbname' => 'nextcloud',
-  'dbhost' => 'localhost',
-  'dbport' => '',
-  'dbtableprefix' => 'oc_',
-  'mysql.utf8mb4' => true,
-  'dbuser' => 'nextcloud',
-  'dbpassword' => 'nextcloud@123',
-  'installed' => true,
-);
+sudo ln -s /snap/bin/certbot /usr/bin/certbot
 ```
+
+- 12 - Tenter d'obtenir un certificat (le DNS doit déjà avoir été propagé)
+
+```sh
+sudo certbot --apache
+```
+
+#### Étape 4 : Ajuster les paramètres PHP
+
+- 1 - Modifier la configuration PHP
+
+```sh
+sudo nano /etc/php/8.3/apache2/php.ini
+```
+
+- Certains d'entre eux devront être modifiés, d'autres devront être décommentés et modifiés.
+
+```sh
+memory_limit = 512M
+
+upload_max_filesize = 2G
+
+max_execution_time = 360
+
+post_max_size = 2G
+
+date.timezone = "Europe/Paris"
+
+opcache.enable = 1
+
+opcache.interned_strings_buffer = 32
+
+opcache.max_accelerated_files = 10000
+
+opcache.memory_consumption = 128
+
+opcache.save_comments = 1
+
+opcache.revalidate_freq = 1
+```
+
+- 2 - Activer le module ACPU
+
+```sh
+sudo nano /etc/php/8.3/mods-available/apcu.ini
+```
+
+- Ajouter au fichier `:apc.enable_cli=1`
+
+- 3 - Redémarrer Apache
+
+```sh
+sudo systemctl restart apache2
+```
+
+#### Étape 5 : Nextcloud via un navigateur Web
+
+- 1 - Installation via le Web: `https://nextcloud.diarabaka.com`
+
+![Nextcloud](/assets/nextcloud.png)
+
+- 2 - Installer les applications recommandées
+
+## Partie 3 : Gérer les avertissements
+
+- 1 - Modifier les autorisations de config.php
+
+```sh
+sudo chmod 660 /var/www/nextcloud.diarabaka.com/config/config.php
+```
+
+- 2 - Certains indices facultatifs manquants ont été détectés.
+
+- Rendre occ exécutable :
+
+```sh
+sudo chmod +x /var/www/nextcloud.diarabaka.com/occ
+```
+
+- Ajoutez ensuite les indices manquants :
+
+```sh
+sudo -u www-data /var/www/nextcloud.diarabaka.com/occ db:add-missing-indices
+```
+
+- Vérifiez si l'erreur n'est plus
+
+- 3 - Une ou plusieurs migrations de type MIME sont disponibles
+
+```sh
+sudo -u www-data /var/www/nextcloud.diarabaka.com/occ maintenance:repair --include-expensive
+```
+
+- 4 - Les avertissements suivants
+  - Le serveur n'a pas d'heure de début de fenêtre de maintenance configurée.
+  - La base de données est utilisée pour le verrouillage des fichiers transactionnels.
+  - Aucun cache mémoire n'a été configuré.
+  - Votre installation n'a pas de région téléphonique par défaut définie.
+  - Vous n'avez pas encore défini ou vérifié la configuration de votre serveur de messagerie.
+
+```sh
+sudo nano /var/www/nextcloud.diarabaka.com/config/config.php
+```
+
+- Retirer: `maintenance => false,`
+
+- Ajouter:
+
+```sh
+'mail_from_address' => 'nextcloud',
+'mail_smtpmode' => 'smtp',
+'mail_sendmailmode' => 'smtp',
+'mail_domain' => 'gmail.com',
+'mail_smtphost' => 'smtp.gmail.com',
+'mail_smtpport' => '587',
+'mail_smtpauth' => 1,
+'mail_smtpname' => 'nextcloud@gmail.com',
+'mail_smtppassword' => 'app-specific-pw',
+'maintenance_window_start' => 1,
+'memcache.local' => '\\OC\\Memcache\\APCu',
+'memcache.distributed' => '\\OC\\Memcache\\Redis',
+'memcache.locking' => '\\OC\\Memcache\\Redis',
+'redis' =>
+array (
+'host' => 'localhost',
+'port' => 6379,
+),
+'default_phone_region' => 'EU',
+'overwriteprotocol' => 'https',
+```
+
+- 5 - Certains en-têtes ne sont pas définis correctement sur votre instance - L' Strict-Transport-Securityen-tête HTTP n'est pas défini (doit être au moins 15552000de secondes).
+
+```sh
+sudo nano /etc/apache2/sites-available/nextcloud.diarabaka.com.conf
+```
+
+- Ajouter après
+
+`Configuration SSL (effectuée par Certbot) SSLCertificateFile /etc/letsencrypt/live/nextcloud.diarabaka.com/fullchain.pem SSLCertificateKeyFile /etc/letsencrypt/live/nextcloud.diarabaka.com/privkey.pem`
+
+```sh
+Paste
+```
+
+- En-tête HSTS
+
+```sh
+Header always set Strict-Transport-Security "max-age=63072000; includeSubDomains; preload"
+```
+
+```sh
+sudo systemctl restart apache2
+```
+
+## Partie 4 : Protection d'accès avec pare-feu
+
+- Aucun serveur ne peut maintenir une bonne sécurité sans une politique de pare-feu active. après avoir installé et configuré nextcloud, nous devons autoriser le trafic uniquement vers des ports spécifiques, le reste des ports doit être proche du monde. si nous ajoutons plus d'applications nextcloud plus tard, nous devrons peut-être ouvrir de nouveaux ports au pare-feu plus tard.
+
+- Autoriser le trafic entrant sur le port 80 (HTTP)
+
+```sh
+sudo iptables -A INPUT -p tcp --dport 80 -j ACCEPT
+```
+
+- Autoriser le trafic entrant sur le port 443 (HTTPS)
+
+```sh
+sudo iptables -A INPUT -p tcp --dport 443 -j ACCEPT
+```
+
+- Autoriser le trafic entrant sur le port 22 (SSH)
+
+```sh
+sudo iptables -A INPUT -p tcp --dport 22 -j ACCEPT
+```
+
+- Autoriser le trafic en boucle
+
+```sh
+sudo iptables -A INPUT -j DROP
+```
+
+- Enregistrez les règles de manière permanente. Elles seront rechargées au redémarrage.
+
+```sh
+sudo netfilter-persistent save
+```
+
+- **[Remarque]** : concernant le port SSH, vous devez uniquement autoriser votre nœud ou réseau spécifique à accéder à distance à votre serveur nextcloud.
