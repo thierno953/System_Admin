@@ -64,7 +64,7 @@ sudo nano /etc/hostname
 sudo nano /etc/hosts
 ```
 
-- Ajouter une ligne `127.0.1.1 ex: venetian nextcloud.diarabaka.com`
+- Ajouter une ligne `127.0.1.1 ex: nextcloud nextcloud.diarabaka.com`
 
 - 5 - Redémarrer le serveur
 
@@ -88,12 +88,12 @@ sudo mysql_secure_installation
 ```sh
 Enter current password for root (enter for none): Enter
 Switch to unix_socket_authentication [Y/n] n
-Change root password [Y/n] Y
+Change root password [Y/n] Enter
 Set password
-Remove anonymous users? Y
-Disallow root login remotely? Y
-Remove test database and access to it? Y
-Reload privilidge tables now? Y
+Remove anonymous users? Enter
+Disallow root login remotely? Enter
+Remove test database and access to it? Enter
+Reload privilidge tables now? Enter
 ```
 
 - Créer une base de données Nextcloud
@@ -145,13 +145,13 @@ unzip latest.zip
 - 4 - Renommer nextcloud en sous-domaine
 
 ```sh
-sudo mv nextcloud /var/www/nextcloud.diarabaka.com
+sudo mv nextcloud nextcloud.diarabaka.com
 ```
 
 - 5 - Modifier la propriété de nextcloud
 
 ```sh
-sudo chown -R www-data:www-data /var/www/nextcloud.diarabaka.com
+sudo chown -R www-data:www-data nextcloud.diarabaka.com
 ```
 
 - 6 - Déplacer nextcloud vers Apache
@@ -167,6 +167,12 @@ sudo a2dissite 000-default.conf
 ```
 
 - 8 - Configurer Apache pour Nextcloud
+
+```sh
+sudo nano /etc/apache2/sites-available/nextcloud.diarabaka.com.conf
+```
+
+- Add the following content: 
 
 ```sh
 <VirtualHost *:80>
@@ -231,7 +237,7 @@ max_execution_time = 360
 
 post_max_size = 2G
 
-date.timezone = "Europe/Paris"
+date.timezone = "Europe/Brussels"
 
 opcache.enable = 1
 
@@ -252,7 +258,7 @@ opcache.revalidate_freq = 1
 sudo nano /etc/php/8.3/mods-available/apcu.ini
 ```
 
-- Ajouter au fichier `:apc.enable_cli=1`
+- Ajouter au fichier `apc.enable_cli=1`
 
 - 3 - Redémarrer Apache
 
@@ -395,3 +401,6 @@ sudo netfilter-persistent save
 ```
 
 - **[Remarque]** : concernant le port SSH, vous devez uniquement autoriser votre nœud ou réseau spécifique à accéder à distance à votre serveur nextcloud.
+
+
+
