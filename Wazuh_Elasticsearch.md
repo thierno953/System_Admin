@@ -207,3 +207,5 @@ URL: https://<wazuh_server_ip>
 user: elastic
 password: <PASSWORD_elastic>
 ```
+
+![WAZUH](/assets/wazuh.png)
