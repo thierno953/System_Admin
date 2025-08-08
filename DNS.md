@@ -1,14 +1,12 @@
-# Serveur DNS avec BIND9 sur Ubuntu Server
+# DNS Server with BIND9 on Ubuntu Server
 
-## Configuration IP statique avec Netplan
-
-#### Édition du fichier de configuration
+### Static IP Configuration with Netplan
 
 ```sh
 sudo nano /etc/netplan/00-installer-config.yaml
 ```
 
-- contenu
+- Content
 
 ```sh
 network:
@@ -22,20 +20,20 @@ network:
         addresses: [1.1.1.1, 8.8.8.8]
 ```
 
-#### Application de la configuration
+### Apply the Configuration
 
 ```sh
 sudo netplan apply
 ```
 
-#### Installation de BIND9 et activation du pare-feu
+### Install BIND9 and Enable Firewall
 
 ```sh
 sudo apt update
 sudo apt install bind9 bind9-utils -y
 ```
 
-#### Activation et autorisation UFW
+### Enable and Allow UFW (`Firewall`)
 
 ```sh
 sudo ufw enable
@@ -43,14 +41,14 @@ sudo ufw allow bind9
 sudo ufw status
 ```
 
-#### Démarrage de BIND9
+### Start BIND9
 
 ```sh
 sudo systemctl start bind9
 sudo systemctl status bind9
 ```
 
-#### Configuration de BIND : named.conf.options
+### Configure BIND: `named.conf.options`
 
 ```sh
 sudo nano /etc/bind/named.conf.options
@@ -68,7 +66,7 @@ options {
 };
 ```
 
-#### Forcer l'utilisation d'IPv4
+### Force IPv4 Usage
 
 ```sh
 sudo nano /etc/default/named
@@ -83,13 +81,13 @@ sudo named-checkconf
 sudo systemctl restart bind9
 ```
 
-#### Déclaration des zones DNS
+### Declare DNS Zones
 
 ```sh
 sudo nano /etc/bind/named.conf.local
 ```
 
-- Contenu
+- Content
 
 ```sh
 zone "diarabaka.local" IN {
@@ -103,14 +101,14 @@ zone "129.168.192.in-addr.arpa" {
 };
 ```
 
-#### Création des fichiers de zones
+### Create Zone Files
 
 ```sh
 sudo mkdir -p /etc/bind/zones
 sudo cp /etc/bind/db.local /etc/bind/zones/db.diarabaka.local
 ```
 
-#### Zone directe : db.diarabaka.local
+### Forward Zone: `db.diarabaka.local`
 
 ```sh
 sudo nano /etc/bind/zones/db.diarabaka.local
@@ -130,7 +128,7 @@ dns01   IN  A   192.168.129.172
 server  IN  CNAME dns01
 ```
 
-#### Zone inverse : db.129.168.192
+### Reverse Zone: `db.129.168.192`
 
 ```sh
 sudo cp /etc/bind/zones/db.diarabaka.local /etc/bind/zones/db.129.168.192
@@ -150,7 +148,7 @@ $TTL 604800
 172     IN  PTR dns01.diarabaka.local.
 ```
 
-#### Vérification de la configuration
+### Configuration Check
 
 ```sh
 sudo named-checkconf /etc/bind/named.conf.local
@@ -158,14 +156,14 @@ sudo named-checkzone diarabaka.local /etc/bind/zones/db.diarabaka.local
 sudo named-checkzone 129.168.192.in-addr.arpa /etc/bind/zones/db.129.168.192
 ```
 
-#### Redémarrage de BIND9
+### Restart BIND9
 
 ```sh
 sudo systemctl restart bind9
 sudo systemctl status bind9
 ```
 
-#### Configuration DNS locale (résolution)
+### Local DNS Configuration (Resolution)
 
 ```sh
 sudo nano /etc/resolv.conf
@@ -180,7 +178,7 @@ options edns0 trust-ad
 search diarabaka.local
 ```
 
-#### Pour éviter que resolv.conf soit écrasé
+### Prevent `resolv.conf` from Being Overwritten
 
 ```sh
 sudo cp /etc/resolv.conf /etc/resolv.conf.back
@@ -189,7 +187,7 @@ sudo rm -f /etc/resolv.conf
 sudo cp /etc/resolv.conf.back /etc/resolv.conf
 ```
 
-#### Tests de résolution DNS
+### DNS Resolution Tests
 
 ```sh
 host dns01.diarabaka.local
@@ -198,9 +196,9 @@ host dns01
 host 192.168.129.172
 ```
 
-#### Sécurisation
+### Securing the Setup
 
-- Vérifier les permissions des fichiers
+- Verify permissions:
 
 ```sh
 sudo chown -R bind:bind /etc/bind/zones
