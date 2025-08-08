@@ -1,56 +1,47 @@
-# Configuration du serveur FTPS
+# FTPS Server Configuration
 
-- Ce projet configure un serveur FTP sécurisé (FTPS) avec VSFTPD sur Ubuntu en mode Bridge, offrant :
-
-  - Chiffrement SSL/TLS via certificat auto-signé
-  - Isolation des utilisateurs avec chroot
-  - Authentification obligatoire (pas d'accès anonyme)
-  - Compatibilité avec FileZilla, WinSCP et autres clients modernes
-
-- → En mode `Bridge`, le serveur apparaît comme un appareil indépendant sur le réseau local.
-
-#### Mise à jour et installation
+### Update and Install
 
 ```sh
 sudo apt update && sudo apt install vsftpd -y
 ```
 
-#### Sauvegarde de la configuration originale
+### Backup the Original Configuration
 
 ```sh
 sudo cp /etc/vsftpd.conf /etc/vsftpd.conf.original
 ```
 
-#### Configuration de vsftpd
+### Configure vsftpd
 
 ```sh
 sudo nano /etc/vsftpd.conf
 ```
 
-- Ajoutez ou modifiez les lignes suivantes
+- Add or modify the following lines:
 
 ```sh
-# Réseau
+# Network
 listen=YES
 listen_ipv6=NO
 
-# Authentification
+# Authentication
 anonymous_enable=NO
 local_enable=YES
 write_enable=YES
 
-# Sécurité et isolation
+# Security and user isolation
 chroot_local_user=YES
 chroot_list_enable=YES
 chroot_list_file=/etc/vsftpd.chroot_list
 allow_writeable_chroot=YES
 secure_chroot_dir=/var/run/vsftpd/empty
 
-# Mode passif
+# Passive mode
 pasv_enable=YES
 pasv_min_port=40000
 pasv_max_port=50000
-pasv_address=172.78.0.20  # Remplacez par l’IP de votre serveur
+pasv_address=192.168.129.20  # Replace with your server’s IP address
 
 # SSL/TLS
 rsa_cert_file=/etc/ssl/certs/vsftpd.pem
@@ -66,40 +57,40 @@ require_ssl_reuse=NO
 ssl_ciphers=HIGH
 ```
 
-#### Création de l'utilisateur FTP
+### Create the FTP User
 
 ```sh
 sudo useradd -m -d /home/thierno -s /bin/bash thierno
-sudo passwd thierno  # Définir le mot de passe
+sudo passwd thierno  # Set the password
 ```
 
-#### Autorisation dans le chroot
+### Allow the User in chroot
 
 ```sh
 echo "thierno chroot" | sudo tee /etc/vsftpd.chroot_list
 ```
 
-#### Génération du certificat SSL
+### Generate SSL Certificate
 
 ```sh
 sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
   -keyout /etc/ssl/private/vsftpd.pem \
   -out /etc/ssl/certs/vsftpd.pem \
-  -subj "/C=FR/ST=Paris/L=Paris/O=MyOrg/CN=ftp-server"
+  -subj "/C=BE/ST=BXL/L=BXL/O=MyOrg/CN=ftp-server"
 ```
 
-#### Configuration du pare-feu UFW
+### Configure UFW Firewall
 
 ```sh
-sudo ufw allow 20/tcp           # FTP - Data
-sudo ufw allow 21/tcp           # FTP - Control
-sudo ufw allow 990/tcp          # FTPS implicite
-sudo ufw allow 40000:50000/tcp  # Mode passif
+sudo ufw allow 20/tcp           # FTP Data
+sudo ufw allow 21/tcp           # FTP Control
+sudo ufw allow 990/tcp          # Implicit FTPS
+sudo ufw allow 40000:50000/tcp  # Passive mode range
 sudo ufw enable
 sudo ufw status
 ```
 
-#### Redémarrage et activation du service
+### Restart and Enable vsftpd
 
 ```sh
 sudo systemctl restart vsftpd
@@ -107,7 +98,7 @@ sudo systemctl enable vsftpd
 sudo systemctl status vsftpd
 ```
 
-#### Sécurisation du dossier utilisateur
+### Secure the User’s Home Directory
 
 ```sh
 sudo chmod 750 /home/thierno
@@ -115,13 +106,13 @@ sudo mkdir -p /home/thierno/ftp
 sudo chown -R thierno:thierno /home/thierno/ftp
 ```
 
-#### Test de connexion FTPS
+### Test FTPS Connection
 
 ```sh
 curl -k --ssl-reqd ftp://localhost/ -u thierno
 ```
 
-#### Connexion avec mot de passe dans la commande (attention à la sécurité) :
+### With password in the command (not recommended for security reasons):
 
 ```sh
 curl -k --ssl-reqd ftp://localhost/ -u thierno:mypassword
