@@ -22,7 +22,7 @@ sudo chmod g+s /home/group
 ```
 
 ### Backup and Edit the Samba Configuration File
-
+ 
 - Backup the Samba config file and open it for editing:
 
 ```sh
