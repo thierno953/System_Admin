@@ -1,18 +1,18 @@
-# Web Server avec Apache sur Ubuntu Server
+# Web Server with Apache on Ubuntu Server
 
-#### Installation d'Apache
+### Installing Apache
 
 ```sh
 sudo apt install apache2 -y
 ```
 
-#### Vérification du statut d’Apache
+### Checking Apache Status
 
 ```sh
 sudo systemctl status apache2
 ```
 
-#### Création du répertoire pour le site
+### Creating the Directory for the Website
 
 ```sh
 sudo mkdir /var/www/medium.diarabaka.local
@@ -20,25 +20,25 @@ sudo chown -R $USER:$USER /var/www/medium.diarabaka.local
 sudo chmod -R 755 /var/www/medium.diarabaka.local
 ```
 
-#### Page d’exemple
+### Sample Web Page
 
 ```sh
 sudo nano /var/www/medium.diarabaka.local/index.html
 ```
 
-- Contenu
+- Content
 
 ```sh
 <h1>Hello Apache2 PROX</h1>
 ```
 
-#### Fichier de configuration
+### Virtual Host Configuration File
 
 ```sh
 sudo nano /etc/apache2/sites-available/medium.diarabaka.local.conf
 ```
 
-- Contenu initial
+- Initial Content:
 
 ```sh
 <VirtualHost *:80>
@@ -51,7 +51,7 @@ sudo nano /etc/apache2/sites-available/medium.diarabaka.local.conf
 </VirtualHost>
 ```
 
-#### Activation de la configuration
+### Enabling the Site Configuration
 
 ```sh
 sudo a2ensite medium.diarabaka.local.conf
@@ -60,25 +60,25 @@ sudo apache2ctl configtest
 sudo systemctl restart apache2
 ```
 
-#### Fichier hosts (poste local ou serveur)
+### Hosts File (on the local machine or server)
 
 ```sh
 sudo nano /etc/hosts
 ```
 
-- Ajouter
+- Add
 
 ```sh
 192.168.129.172 medium.diarabaka.local
 ```
 
-#### Zone DNS locale avec BIND9
+### Local DNS Zone with BIND9
 
 ```sh
 sudo nano /etc/bind/zones/db.diarabaka.local
 ```
 
-- Contenu
+- Content
 
 ```sh
 medium.diarabaka.local  IN  A  192.168.129.172
@@ -89,16 +89,16 @@ sudo systemctl restart bind9
 sudo systemctl status bind9
 ```
 
-## Activer HTTPS avec certificat auto-signé
+## Enable HTTPS with a Self-Signed Certificate
 
-#### Activation du module SSL
+### Enable SSL Module
 
 ```sh
 sudo a2enmod ssl
 sudo systemctl restart apache2
 ```
 
-#### Génération du certificat SSL
+### Generate SSL Certificate
 
 ```sh
 sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
@@ -106,25 +106,13 @@ sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
 -out /etc/ssl/certs/apache-selfsigned.crt
 ```
 
-#### Répondez aux questions
-
-```sh
-Country Name (2 letter code) [AU]:BE
-State or Province Name (full name) [Some-State]:BXL
-Locality Name (eg, city) []:Koekelberg
-Organization Name (eg, company) [Internet Widgits Pty Ltd]:Diarabaka
-Organizational Unit Name (eg, section) []:IT
-Common Name (e.g. server FQDN or YOUR name) []:Sys-Admin
-Email Address []:admin@gmail.com
-```
-
-#### Modifier le Virtual Host avec HTTPS
+### Update the Virtual Host File for HTTPS
 
 ```sh
 sudo nano /etc/apache2/sites-available/medium.diarabaka.local.conf
 ```
 
-- Contenu
+- New content:
 
 ```sh
 <VirtualHost *:80>
@@ -146,7 +134,7 @@ sudo nano /etc/apache2/sites-available/medium.diarabaka.local.conf
 </VirtualHost>
 ```
 
-#### Test et rechargement
+### Test and Reload Apache
 
 ```sh
 sudo apache2ctl configtest
@@ -154,4 +142,4 @@ sudo systemctl reload apache2
 sudo a2dissite 000-default
 ```
 
-- `https://medium.diarabaka.local` est maintenant opérationnel avec HTTPS sécurisé (certificat auto-signé).
+- `https://medium.diarabaka.local` is up and running with a secure (self-signed) HTTPS certificate.
