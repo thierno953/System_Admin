@@ -1,11 +1,13 @@
-#### Installation des paquets nécessaires
+# Web Server with Nginx on Ubuntu Server
+
+### Install Required Packages
 
 ```sh
 sudo apt update
 sudo apt install nginx -y
 ```
 
-#### Configuration du Proxy NGINX (debianprox.local)
+### Configure NGINX Proxy (debianprox.local)
 
 ```sh
 sudo nano /etc/nginx/sites-available/debianprox.conf
@@ -26,46 +28,46 @@ server {
 }
 ```
 
-#### Activer le site et redémarrer NGINX
+### Enable the Site and Restart NGINX
 
 ```sh
 sudo ln -s /etc/nginx/sites-available/debianprox.conf /etc/nginx/sites-enabled/
 sudo nginx -t && sudo systemctl restart nginx
 ```
 
-## Configuration DNS BIND9
+### BIND9 DNS Configuration
 
-#### Éditer la zone DNS
+- Edit DNS Zone File
 
 ```sh
 sudo nano /etc/bind/zones/db.diarabaka.local
 ```
 
 ```sh
-debianprox.local  IN    A    192.168.129.172
+debianprox.local.  IN    A    192.168.129.172
 ```
 
-#### Redémarrage DNS
+### Restart DNS Service
 
 ```sh
 sudo systemctl restart bind9
 sudo systemctl status bind9
 ```
 
-#### Activation du forwarding IPv4 (optionnel)
+### Enable IPv4 Forwarding (Optional)
 
 ```sh
 sudo sysctl -w net.ipv4.ip_forward=1
 sudo nano /etc/sysctl.conf
 ```
 
-- Ajouter ou décommenter la ligne
+- Add or uncomment the following line:
 
 ```sh
 net.ipv4.ip_forward=1
 ```
 
-#### Création du site Web sécurisé (asir.diarabaka.local)
+### Create Secure Website (`asir.diarabaka.local`)
 
 ```sh
 sudo mkdir -p /var/www/asir.diarabaka.local/html
@@ -73,17 +75,17 @@ sudo chown -R $USER:$USER /var/www/asir.diarabaka.local
 sudo chmod -R 755 /var/www/asir.diarabaka.local
 ```
 
-#### Créer la page d’accueil
+### Create Homepage
 
 ```sh
 sudo nano /var/www/asir.diarabaka.local/html/index.html
 ```
 
 ```sh
-<h1>Bienvenue sur ASIR HTTPS</h1>
+<h1>Welcome to ASIR HTTPS</h1>
 ```
 
-#### Configurer le site HTTP
+### Configure HTTP Site
 
 ```sh
 sudo nano /etc/nginx/sites-available/asir.diarabaka.local
@@ -105,22 +107,22 @@ server {
 }
 ```
 
-#### Activer le site
+### Enable the Site
 
 ```sh
 sudo ln -s /etc/nginx/sites-available/asir.diarabaka.local /etc/nginx/sites-enabled/
 sudo nginx -t && sudo systemctl restart nginx
 ```
 
-## Activer le HTTPS avec certificat auto-signé
+### Enable HTTPS with Self-Signed Certificate
 
-#### Créer le dossier SSL
+- Create SSL Directory
 
 ```sh
 sudo mkdir /etc/nginx/ssl-certs/
 ```
 
-#### Générer les certificats
+### Generate Certificates
 
 ```sh
 sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
@@ -128,7 +130,7 @@ sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
 -out /etc/nginx/ssl-certs/nginx.crt
 ```
 
-#### Modifier la configuration NGINX pour le HTTPS
+### Modify NGINX Configuration for HTTPS
 
 ```sh
 sudo nano /etc/nginx/sites-available/asir.diarabaka.local
@@ -164,18 +166,19 @@ server {
 }
 ```
 
-#### Redémarrer NGINX
+### Restart NGINX
 
 ```sh
 sudo systemctl reload nginx
 ```
 
-#### Vérifications
+### Verification
 
 ```sh
-dig @192.168.129.172 prox.diarabaka.local
+dig @192.168.129.172 debianprox.local
 dig -x 192.168.129.172 @192.168.129.172
 
 curl http://debianprox.local
-curl -k https://asir.diarabaka.local  # Le -k ignore l'avertissement SSL auto-signé
+
+curl -k https://asir.diarabaka.local
 ```
