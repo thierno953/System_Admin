@@ -1,18 +1,6 @@
-# Mise en place d’un partage Samba sécurisé avec gestion des utilisateurs
+# Setting Up a Secure Samba Share with User Management
 
-- L’objectif de cette procédure est de configurer un partage réseau Samba sur un système Linux, accessible uniquement par les membres d’un groupe spécifique. Nous allons :
-
-  - 1 - Installer Samba,
-
-  - 2 - Créer un utilisateur et un groupe,
-
-  - 3 - Configurer un répertoire partagé avec les bonnes permissions,
-
-  - 4 - Modifier le fichier de configuration Samba,
-
-  - 5 - Tester l’accès au partage.
-
-#### Installation de Samba
+### Install Samba
 
 ```sh
 sudo apt update
@@ -20,9 +8,9 @@ sudo apt install samba -y
 samba --version
 ```
 
-#### Création d’un utilisateur et préparation des dossiers
+### Create a User and Prepare Directories
 
-- Création de l'utilisateur john, du groupe smbgroup et du dossier partagé
+- Create user **john**, the group **smbgroup**, and the shared folder
 
 ```sh
 sudo adduser john
@@ -33,9 +21,9 @@ sudo chmod 770 /home/group
 sudo chmod g+s /home/group
 ```
 
-#### Sauvegarde et édition du fichier de configuration Samba
+### Backup and Edit the Samba Configuration File
 
-- Sauvegarde du fichier de config Samba et édition
+- Backup the Samba config file and open it for editing:
 
 ```sh
 cd /etc/samba/
@@ -43,7 +31,7 @@ sudo cp smb.conf smb.conf.bak
 sudo nano smb.conf
 ```
 
-- les lignes à ajouter ou modifier dans le fichier smb.con
+- Lines to add or modify in **smb.conf**:
 
 ```sh
 [global]
@@ -53,7 +41,7 @@ interfaces = lo enp0s3
 bind interfaces only = yes
 
 [homes]
-comment = Dossiers personnels
+comment = Personal folders
 path = /home/%S
 valid users = %S
 read only = no
@@ -62,7 +50,7 @@ directory mask = 0700
 browseable = no
 
 [Group]
-comment = Partage commun pour les membres du groupe smbgroup
+comment = Shared folder for smbgroup members
 path = /home/group
 writable = yes
 guest ok = no
@@ -72,9 +60,9 @@ force directory mode = 0770
 inherit permissions = yes
 ```
 
-#### Configuration des droits d’accès
+### Set Access Permissions
 
-- Configuration des droits et ajout de john au groupe smbgroup
+- Set permissions and add user **john** to group **smbgroup**:
 
 ```sh
 sudo chmod 755 /home/john
@@ -82,13 +70,13 @@ sudo smbpasswd -a john
 sudo usermod -aG smbgroup john
 ```
 
-#### Vérification de la config Samba
+### Verify Samba Configuration
 
 ```sh
 testparm
 ```
 
-#### Redémarrage du service Samba et ouverture du pare-feu
+### Restart Samba Service and Open Firewall
 
 ```sh
 sudo systemctl restart smbd
@@ -97,16 +85,16 @@ sudo ufw enable
 sudo ufw allow samba
 ```
 
-#### Test de connexion avec smbclient
+### Test Connection with smbclient
 
-- Test d’accès avec smbclient (depuis la machine locale)
+- Test access using **smbclient** (from the local machine):
 
 ```sh
 sudo apt install smbclient
 smbclient //192.168.129.152/Group -U john
 ```
 
-- Une fois connecté:
+- Once connected:
 
 ```sh
 smb: \> mkdir testfolder
@@ -114,14 +102,13 @@ smb: \> put /etc/hosts hosts.txt
 smb: \> dir
 ```
 
-- Nous devrions voir les fichiers créés et transférés dans le partage.
+### Recommended Next Test
 
-#### À tester ensuite (recommandé)
+- Connect from a `Windows workstation`:
 
-- Connexion depuis un `poste Windows` :
-  - Ouvrir l’explorateur de fichiers et saisir `\\192.168.129.152\Group`, puis se connecter avec l’utilisateur `john`.
+- Open File Explorer and enter `\\192.168.129.152\Group`, then log in with user `john`.
 
-#### Ajout d'un autre utilisateur alice et intégration dans smbgroup
+### Add Another User Alice and Add to smbgroup
 
 ```sh
 sudo adduser alice --home /home/alice
@@ -129,8 +116,9 @@ sudo smbpasswd -a alice
 sudo usermod -aG smbgroup alice
 ```
 
-- `Test avec un utilisateur non membre du groupe` pour vérifier le contrôle d’accès.
-  - Doit retourner une erreur d'accès refusé (NT_STATUS_ACCESS_DENIED)
+- **Test with a user who is not a group member** to verify access control:
+
+  - Should return an access denied error (NT_STATUS_ACCESS_DENIED)
 
 ```sh
 sudo adduser bob
